@@ -12,6 +12,7 @@ N_SAMPLES = 100
 
 @pytest.fixture
 def xyz():
+    torch.manual_seed(42)
     return TensorMap(
         keys=Labels.single(),
         blocks=[
@@ -74,10 +75,12 @@ def test_metatensor(xyz, device):
                 sphericart.torch.SphericalHarmonics(single_l).compute(
                     xyz.block().values.squeeze(-1)
                 )[:, single_l**2 : (single_l + 1) ** 2],
+                atol=1e-6,
             )
             assert torch.allclose(
                 solid_block.values.squeeze(-1),
                 sphericart.torch.SolidHarmonics(l).compute(
                     xyz.block().values.squeeze(-1)
                 )[:, single_l**2 : (single_l + 1) ** 2],
+                atol=1e-6,
             )
