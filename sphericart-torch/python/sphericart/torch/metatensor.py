@@ -15,10 +15,15 @@ except ImportError as e:
     ) from e
 
 
-class SphericalHarmonics:
+class SphericalHarmonics(torch.nn.Module):
     """
     ``metatensor``-based wrapper around the
     :py:meth:`sphericart.torch.SphericalHarmonics` class.
+
+    This is a :py:class:`torch.nn.Module`, so it can be used in training
+    pipelines and participates in device/dtype management. PyTorch autograd
+    flows through the output block values, enabling backpropagation through
+    the spherical harmonics computation.
 
     See :py:class:`sphericart.metatensor.SphericalHarmonics` for more details.
     ``backward_second_derivatives`` has the same meaning as in
@@ -30,7 +35,8 @@ class SphericalHarmonics:
         l_max: int,
         backward_second_derivatives: bool = False,
     ):
-        self.l_max = l_max
+        super().__init__()
+        self._l_max = l_max
         self.raw_calculator = RawSphericalHarmonics(l_max, backward_second_derivatives)
 
         # precompute some labels
@@ -54,6 +60,15 @@ class SphericalHarmonics:
             values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
+
+    def forward(self, xyz: TensorMap) -> TensorMap:
+        """
+        Compute spherical harmonics, returning a TensorMap with autograd support.
+
+        Equivalent to :py:meth:`compute`. Provided so this class can be used as a
+        standard :py:class:`torch.nn.Module` (e.g. ``module(xyz)``).
+        """
+        return self.compute(xyz)
 
     def compute(self, xyz: TensorMap) -> TensorMap:
         """
@@ -115,9 +130,9 @@ class SphericalHarmonics:
             self.precomputed_keys,
             xyz.block().samples,
             self.precomputed_mu_components,
-            self.precomputed_properties,
             self.precomputed_xyz_components,
             self.precomputed_xyz_2_components,
+            self.precomputed_properties,
             sh_gradients,
             sh_hessians,
         )
@@ -132,10 +147,13 @@ class SphericalHarmonics:
         self.precomputed_properties = self.precomputed_properties.to(device)
 
 
-class SolidHarmonics:
+class SolidHarmonics(torch.nn.Module):
     """
     ``metatensor``-based wrapper around the
     :py:meth:`sphericart.torch.SolidHarmonics` class.
+
+    This is a :py:class:`torch.nn.Module` with the same autograd support as
+    :py:class:`SphericalHarmonics`.
 
     See :py:class:`sphericart.metatensor.SphericalHarmonics` for more details.
     ``backward_second_derivatives`` has the same meaning as in
@@ -147,7 +165,8 @@ class SolidHarmonics:
         l_max: int,
         backward_second_derivatives: bool = False,
     ):
-        self.l_max = l_max
+        super().__init__()
+        self._l_max = l_max
         self.raw_calculator = RawSolidHarmonics(l_max, backward_second_derivatives)
 
         # precompute some labels
@@ -171,6 +190,15 @@ class SolidHarmonics:
             values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
+
+    def forward(self, xyz: TensorMap) -> TensorMap:
+        """
+        Compute solid harmonics, returning a TensorMap with autograd support.
+
+        Equivalent to :py:meth:`compute`. Provided so this class can be used as a
+        standard :py:class:`torch.nn.Module` (e.g. ``module(xyz)``).
+        """
+        return self.compute(xyz)
 
     def compute(self, xyz: TensorMap) -> TensorMap:
         """
