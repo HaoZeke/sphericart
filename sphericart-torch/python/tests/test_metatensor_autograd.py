@@ -19,19 +19,20 @@ N_SAMPLES = 20
 
 def _make_xyz_tensormap(xyz_raw: torch.Tensor) -> TensorMap:
     """Wrap a (N, 3) tensor into the TensorMap format expected by the wrapper."""
+    device = xyz_raw.device
     return TensorMap(
-        keys=Labels.single(),
+        keys=Labels.single().to(device),
         blocks=[
             TensorBlock(
                 values=xyz_raw.unsqueeze(-1),  # (N, 3, 1)
                 samples=Labels(
                     names=["sample"],
-                    values=torch.arange(xyz_raw.shape[0]).reshape(-1, 1),
+                    values=torch.arange(xyz_raw.shape[0], device=device).reshape(-1, 1),
                 ),
                 components=[
-                    Labels(names=["xyz"], values=torch.arange(3).reshape(-1, 1))
+                    Labels(names=["xyz"], values=torch.arange(3, device=device).reshape(-1, 1))
                 ],
-                properties=Labels.single(),
+                properties=Labels.single().to(device),
             )
         ],
     )
